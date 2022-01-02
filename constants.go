@@ -1,7 +1,7 @@
 /*
  * constants.go
  *
- * Copyright (c) 2021 Stavros Avramidis (@purpl3F0x). All rights reserved.
+ * Copyright (c) 2021-2022 Stavros Avramidis (@purpl3F0x). All rights reserved.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,14 +21,16 @@
 
 package ant
 
+// TODO: add to ant+ package
+
 func AntPlusNetworkKey() [8]uint8 {
 	return [8]uint8{0xB9, 0xA5, 0x21, 0xFB, 0xBD, 0x72, 0xC3, 0x45}
 }
 
 const (
-	//////////////////////////////////////////////
-	// ANT Message Payload Size
-	//////////////////////////////////////////////
+	// ////////////////////////////////////////////
+	// ANT Message Packet Size
+	// ////////////////////////////////////////////
 
 	ANT_STANDARD_DATA_PAYLOAD_SIZE uint8 = 8
 
