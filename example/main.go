@@ -1,7 +1,7 @@
 /*
  * main.go
  *
- * Copyright (c) 2021-2022 Stavros Avramidis (@purpl3F0x). All rights reserved.
+ * Copyright (c) 2021-2023 Stavros Avramidis (@purpl3F0x). All rights reserved.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,7 @@ package main
 
 import (
 	"github.com/purpl3F0x/go-ant"
-	"os"
-	"os/signal"
+	"time"
 )
 
 func eval(err error) {
@@ -43,20 +42,23 @@ func main() {
 	eval(Ant.Start())
 
 	// defer Ant.ResetSystem()
-	// defer Ant.Stop()
+	defer Ant.Stop()
 
 	Ant.ResetSystem()
 
-	// time.Sleep(600 * time.Millisecond)
+	time.Sleep(1000 * time.Millisecond)
 
 	Ant.SetNetworkKey(0, ant.AntPlusNetworkKey())
 	Ant.AssignChannel(0, ant.PARAMETER_RX_NOT_TX, 0)
-	Ant.SetChannelId(0, 0, 0, 0)
-	// Ant.SetChannelPeriod(0, 8070)
+	Ant.SetChannelId(0, 0, 120, 0)
+	Ant.SetChannelPeriod(0, 8070)
 	Ant.SetChannelRFFreq(0, 57)
 	Ant.OpenRxScanMode()
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-	<-interrupt
+	select {}
+	// time.Sleep(100 * time.Second)
+
+	// interrupt := make(chan os.Signal, 1)
+	// signal.Notify(interrupt, os.Interrupt)
+	// <-interrupt
 }

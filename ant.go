@@ -1,7 +1,7 @@
 /*
  * ant.go
  *
- * Copyright (c) 2021-2022 Stavros Avramidis (@purpl3F0x). All rights reserved.
+ * Copyright (c) 2021-2023 Stavros Avramidis (@purpl3F0x). All rights reserved.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	"time"
 )
 
 type Driver interface {
@@ -48,13 +49,13 @@ type Ant struct {
 
 func MakeAnt(dev Driver, read chan *Message) (ant *Ant) {
 	ant = &Ant{
-		driver:          dev,
-		read:            read,
-		write:           make(chan *Message),
-		writeInTimeslot: make(chan *Message),
-		stopper:         make(chan struct{}),
-		decoder:         make(chan byte),
-		done:            make(chan struct{}),
+		driver: dev,
+		read:   read,
+		write:  make(chan *Message),
+		// writeInTimeslot: make(chan *Message),
+		stopper: make(chan struct{}),
+		decoder: make(chan byte),
+		done:    make(chan struct{}),
 	}
 
 	return ant
@@ -64,10 +65,15 @@ func (dev *Ant) Start() (e error) {
 	log.Println("Starting Device")
 	e = dev.driver.Open()
 
+	if e != nil {
+		return e
+	}
+
 	dev.buffer = make(Packet, dev.driver.BufferSize())
 
 	go dev.loop()
 	go dev.decodeLoop()
+	go dev.readLoop()
 	return e
 }
 
@@ -81,10 +87,13 @@ func (dev *Ant) Stop() {
 }
 
 func (dev *Ant) loop() {
-	// defer func() { dev.done <- struct{}{} }()
-	// defer dev.driver.Close()
-	// defer close(dev.decoder)
-	// defer close(dev.write)
+
+	// ticker := time.NewTicker(time.Millisecond)
+	defer func() { dev.done <- struct{}{} }()
+	defer dev.driver.Close()
+	defer close(dev.decoder)
+	defer close(dev.write)
+	// defer ticker.Stop()
 	// defer close(dev.writeInTimeslot)
 	defer log.Println("Loop stopped!")
 
@@ -92,38 +101,44 @@ func (dev *Ant) loop() {
 
 	for {
 		select {
-		// case <-dev.stopper:
-		// 	return
+		case <-dev.stopper:
+			return
 
 		case d := <-dev.write:
 			m := d.Encode()
-			// log.Println("Writing: ", m)
+
+			log.Println("Writing: ", m)
 			_, err := dev.driver.Write(m)
 			if err != nil {
 				log.Println(err)
 			}
-
-			// Read from device
-			if i, err := dev.driver.Read(dev.buffer); err == nil {
-				for _, v := range dev.buffer[:i] {
-					dev.decoder <- v
-				}
-			}
-
-		default:
-			// Read from device
-			if i, err := dev.driver.Read(dev.buffer); err == nil {
-				for _, v := range dev.buffer[:i] {
-					dev.decoder <- v
-				}
-			}
+			time.Sleep(time.Nanosecond)
 		}
 	}
 }
 
+func (dev *Ant) readLoop() {
+	ticker := time.NewTicker(time.Millisecond)
+
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if i, err := dev.driver.Read(dev.buffer); err == nil {
+				for _, v := range dev.buffer[:i] {
+					dev.decoder <- v
+
+				}
+			}
+		}
+	}
+
+}
+
 func (dev *Ant) decodeLoop() {
-	// defer func() { dev.done <- struct{}{} }()
-	// defer close(dev.read)
+	defer func() { dev.done <- struct{}{} }()
+	defer close(dev.read)
 
 	for {
 		// Wait for TX Sync
@@ -136,7 +151,7 @@ func (dev *Ant) decodeLoop() {
 		// Get content length (+1byte type + 1byte checksum)
 		length, ok := <-dev.decoder
 		if !ok {
-			return
+			continue
 		}
 
 		buf := make(Packet, length+4)
@@ -156,6 +171,10 @@ func (dev *Ant) decodeLoop() {
 		}
 
 		log.Println("Read:", msg)
+		// if dev.read != nil {
+		// 	dev.read <- msg
+		//
+		// }
 
 		// select {
 		// case dev.read <- msg:
