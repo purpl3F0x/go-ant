@@ -1,7 +1,7 @@
 /*
  * driver.go
  *
- * Copyright (c) 2021 Stavros Avramidis (@purpl3F0x). All rights reserved.
+ * Copyright (c) 2021-2022 Stavros Avramidis (@purpl3F0x). All rights reserved.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -106,7 +106,7 @@ func (dev *UsbDevice) Write(b []byte) (int, error) {
 }
 
 func (dev *UsbDevice) BufferSize() int {
-	return 64
+	return dev.out.Desc.MaxPacketSize
 }
 
 func GetUsbDevice(vid, pid gousb.ID) *UsbDevice {

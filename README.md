@@ -1,17 +1,17 @@
 # go-ant
 
-ANT, ANT+, ANT-FS library and ANT-USB driver written in Go
+Garmin's ANT, ANT+, ANT-FS protocol stack and ANT-USB driver written in Go
 
+## Installation
 
-## Instalation 
 1. Install with:
-```go 
-go get -u github.com/purpl3F0x/go-ant
-```
+    ```go 
+    go get -u github.com/purpl3F0x/go-ant
+    ```
 2. Import to project
-```go
-import "github.com/purpl3F0x/go-ant"
-```
+    ```go
+    import "github.com/purpl3F0x/go-ant"
+    ```
 
 ## Example 
 
@@ -32,7 +32,7 @@ import "github.com/purpl3F0x/go-ant"
 
 ## License
 ```
-Copyright (c) 2021 Stavros Avramidis (@purpl3F0x). All rights reserved.
+Copyright (c) 2021-3 Stavros Avramidis (@purpl3F0x). All rights reserved.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

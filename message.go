@@ -1,7 +1,7 @@
 /*
  * message.go
  *
- * Copyright (c) 2021 Stavros Avramidis (@purpl3F0x). All rights reserved.
+ * Copyright (c) 2021-2022 Stavros Avramidis (@purpl3F0x). All rights reserved.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,55 +24,78 @@ package ant
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
-type Message struct {
-	Id      byte
-	payload []byte
+type Packet []byte
+
+func (p Packet) String() string {
+	l := len(p)
+
+	if l == 0 {
+		return "[]"
+	}
+	l--
+	var b strings.Builder
+	b.Grow((l)*6 + 2 + 4)
+	b.Write(Packet(fmt.Sprint("[")))
+	for i := 0; i < l; i++ {
+		b.Write(Packet(fmt.Sprintf("0x%02X, ", p[i])))
+	}
+	b.Write(Packet(fmt.Sprintf("0x%02X]", p[l])))
+	return b.String()
 }
 
-func NewMessage(id byte, payload []byte) *Message {
-	return &Message{id, payload}
+type Message struct {
+	Id   byte
+	Data Packet
+}
+
+func NewMessage(id byte, data Packet) *Message {
+	return &Message{id, data}
 }
 
 func (m Message) length() int {
-	return len(m.payload) + MESG_FRAME_SIZE
+	return len(m.Data) + MESG_FRAME_SIZE
 }
 
 func (m Message) String() string {
-	return fmt.Sprint("AntMessage", "(", m.Id, "): ", m.payload)
+	return fmt.Sprintf("AntMessage (0x%02X) %s", m.Id, m.Data)
 
 }
 
 func (m Message) Checksum() (checksum byte) {
-	n := len(m.payload)
+	n := len(m.Data)
 	checksum = MESG_TX_SYNC ^ byte(n) ^ m.Id
 	for i := 0; i < n; i++ {
-		checksum ^= m.payload[i]
+		checksum ^= m.Data[i]
 	}
 	return checksum
 }
 
-func (m Message) Encode() []byte {
-	l := m.length()
-	raw := make([]byte, l)
+func (m Message) Encode() Packet {
+	rawLen := m.length()
+	msgLen := len(m.Data)
+	raw := make(Packet, rawLen)
 
 	raw[0] = MESG_TX_SYNC
-	raw[1] = byte(l)
+	raw[1] = byte(msgLen)
 	raw[2] = m.Id
-	copy(raw[MESG_DATA_OFFSET:], m.payload)
+	copy(raw[MESG_DATA_OFFSET:], m.Data)
 
-	checksum := MESG_TX_SYNC ^ byte(l) ^ m.Id
+	checksum := MESG_TX_SYNC ^ byte(msgLen) ^ m.Id
 
-	for _, v := range m.payload {
-		checksum ^= v
+	for n := 2; n < msgLen; n++ {
+		checksum ^= m.Data[n]
 	}
-	raw[l-1] = checksum
+	raw[rawLen-1] = checksum
+	// raw[rawLen] = 0
+	// raw[rawLen+1] = 0
 
 	return raw
 }
 
-func Decode(buffer []byte) (m *Message, err error) {
+func Decode(buffer Packet) (m *Message, err error) {
 
 	sync := buffer[0]
 	length := int(buffer[MESG_SIZE_OFFSET])
