@@ -84,10 +84,10 @@ func (m Message) Encode() Packet {
 	copy(raw[MESG_DATA_OFFSET:], m.Data)
 
 	checksum := MESG_TX_SYNC ^ byte(msgLen) ^ m.Id
-
-	for n := 2; n < msgLen; n++ {
+	for n := 0; n < msgLen; n++ {
 		checksum ^= m.Data[n]
 	}
+
 	raw[rawLen-1] = checksum
 	// raw[rawLen] = 0
 	// raw[rawLen+1] = 0
